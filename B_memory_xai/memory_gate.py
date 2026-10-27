@@ -100,8 +100,11 @@ def run_gate(log_paths, db=None):
 
 
 if __name__ == "__main__":
-    logs = [lr.ROOT / "logs" / "sample_urgent_moderate.jsonl",
-            lr.ROOT / "logs" / "sample_urgent_severe.jsonl"]
+    import sys
+    from pathlib import Path
+    logs = [Path(p) for p in sys.argv[1:]] or [
+        lr.ROOT / "logs" / "sample_urgent_moderate.jsonl",
+        lr.ROOT / "logs" / "sample_urgent_severe.jsonl"]
     logs = [p for p in logs if p.exists()]
     gate, table = run_gate(logs)
     print(table.to_string(index=False))

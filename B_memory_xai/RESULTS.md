@@ -36,3 +36,12 @@ Tuning on validation seeds 5000-5019 (20 days); final test on eval seeds 10000-1
 ## Memory Gate (sample logs, NaiveBelief)
 39 candidate incidents -> 18 stored, 8 stored provisional, 8 rejected insignificant, 5 rejected unresolved.
 First design rejected uncertain incidents: discarded 3 of the 4 worst outcomes (-36.4, -28.2, -18.3) -> changed to provisional flag.
+
+## Plan Card Generator (PPO, severe)
+   - Seed 10000: 5 of 96 steps flagged (5%). Seed 10050: 2 of 96 (2%). All flagged for low policy preference (< 0.6).
+   - Precedents found at distance 0.46-0.48 (weak matches, just under MAX_DISTANCE 0.5).
+   - Fig. 6 = seed 10050, step 56: preference 0.47; precedent "harmful -10.3, then: wait" supports dispatching.
+   - Limitation: key-factor sensitivity can be implausible (seed 10000 step 70: blanking Machang demand raised
+     preference to go to Machang, +0.41) because perturbed inputs are off-distribution.
+   - Limitation: counterfactual changes beliefs but not the action mask.
+   - Windows: KMP_DUPLICATE_LIB_OK workaround (PyTorch + FAISS OpenMP conflict), 1 thread.
