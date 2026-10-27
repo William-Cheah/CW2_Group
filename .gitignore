@@ -1,0 +1,23 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Big files go to Google Drive, NOT Git (brief Section 9)
+C_ml_engine/runs/
+C_ml_engine/results/
+*.zip
+*.pt
+*.pth
+events.out.tfevents.*
+logs/local/
+*.faiss
+chroma/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+~$*

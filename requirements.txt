@@ -1,0 +1,24 @@
+# CW2 Group - pinned versions so everyone runs the SAME stack.
+# Python 3.11 or 3.12 recommended (3.10-3.13 supported). No GPU needed.
+# Install:  python -m venv .venv  ->  activate  ->  pip install -r requirements.txt
+
+# --- Core (everyone) ---
+numpy==2.2.6
+gymnasium==1.3.0
+networkx==3.4.2
+torch==2.8.0
+stable-baselines3==2.9.0
+sb3-contrib==2.9.0          # MaskablePPO
+tensorboard==2.20.0
+pyyaml==6.0.2
+pandas==2.2.3
+matplotlib==3.10.3
+tqdm==4.67.1
+rich==14.0.0
+
+# --- Member A (fuzzy safety rules) ---
+scikit-fuzzy==0.5.0
+scipy==1.15.3               # needed by scikit-fuzzy
+
+# --- Member B (Incident VectorDB) ---
+faiss-cpu==1.11.0
