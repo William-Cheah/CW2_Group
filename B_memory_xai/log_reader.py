@@ -17,6 +17,10 @@ N_ROADS = 7
 BELIEF_VAR_MAX = 0.25   # max of p(1-p): used to scale belief_var to 0..1
 HIGH_VAR_QUANTILE = 0.90    # "high uncertainty" = top 10% of belief_var
 OUTCOME_WINDOW = 8  # steps after an incident (8 x 15 min = 2h = urgent deadline)
+# Fallback / Memory Gate uncertainty thresholds. Set from belief_var percentiles (p90 / p75)
+# of sample_urgent_severe.jsonl under C's NaiveBelief. RECALIBRATE when A's estimator is in.
+TAU_ENTER = 0.0688
+TAU_EXIT = 0.0525
 
 def decode_action(a):
     """Action index -> readable text. CONTRACT 6.2: 0 = wait, 1 + v*4 +  k = van v -> hospital k."""
@@ -105,6 +109,7 @@ def find_incidents(df, var_threshold=None):
         override=("override", "any"),
         total_reward=("reward", "sum"),
         start_obs=("obs", "first"),
+        start_action=("action_text", "first"),
         start_belief_var=("belief_var", "first"),
     ).reset_index(drop=True)
     # Outcome = what happened during the incident AND in the next OUTCOME_WINDOW steps
@@ -118,6 +123,7 @@ def find_incidents(df, var_threshold=None):
             "outcome_wasted": int(r["units_wasted"] + after["units_wasted"].sum()),
             "outcome_breach": bool(r["temp_breach"] or after["temp_breach"].any()),
             "resolved": len(after) == OUTCOME_WINDOW,   # False if the episode ended too soon
+            "end_belief_var": float(after["belief_var"].iloc[-1]) if len(after) else float(r["start_belief_var"]),
         })
     return pd.concat([summary, pd.DataFrame(outcomes)], axis=1)
 
@@ -132,5 +138,5 @@ if __name__ == "__main__":
     incidents = find_incidents(df)
     print(f"\nFound {len(incidents)} incidents")
     if not incidents.empty:
-        print(incidents.drop(columns=["start_obs"]).to_string(index=False))
+        print(incidents.drop(columns=["start_obs", "start_action"]).to_string(index=False))
     print("\nFeature vector (step 1):", np.round(to_vector(df.loc[0, "obs"], df.loc[0, "belief_var"]), 3))
