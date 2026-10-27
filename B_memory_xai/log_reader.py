@@ -19,8 +19,8 @@ HIGH_VAR_QUANTILE = 0.90    # "high uncertainty" = top 10% of belief_var
 OUTCOME_WINDOW = 8  # steps after an incident (8 x 15 min = 2h = urgent deadline)
 # Fallback / Memory Gate uncertainty thresholds. Set from belief_var percentiles (p90 / p75)
 # of sample_urgent_severe.jsonl under C's NaiveBelief. RECALIBRATE when A's estimator is in.
-TAU_ENTER = 0.0688
-TAU_EXIT = 0.0525
+TAU_ENTER = 0.09    # tuned on validation seeds 5000-5019 (ablation config 5a)
+TAU_EXIT = 0.07 # tuned on validation seeds 5000-5019 (ablation config 5a)
 
 def decode_action(a):
     """Action index -> readable text. CONTRACT 6.2: 0 = wait, 1 + v*4 +  k = van v -> hospital k."""

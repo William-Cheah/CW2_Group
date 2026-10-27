@@ -19,12 +19,13 @@ import numpy as np
 import log_reader as lr # also puts C_ml_engine on the import path
 
 # ---- Settings (steps of 15 min) ----
-ENTER_STEPS = 2        # L0 -> L1 after 30 min of high uncertainty
-ESCALATE_STEPS = 4     # L1 -> L2 after 1 h in L1 with an urgent request still waiting
+ENTER_STEPS = 4        # L0 -> L1 after 1 h of high uncertainty (config 5a)
+ESCALATE_STEPS = 10**9     # L2 used only for recovery from L3, never for escalation (config 5a)
 EXIT_STEPS = {1: 4,    # L1 -> L0 after 1 h of low uncertainty
               2: 2,    # L2 -> L1 after 30 min of low uncertainty (officer hands back)
               3: 2}    # L3 -> L2 after 30 min in which a dispatch is possible again
 OFFICER_DELAY = 1   # simulated officer needs 1 step to respond after taking over
+USE_L2 = True   # False = officer level disabled (escalation AND recovery skip it)
 
 
 def uncertainty_from_obs(obs):
@@ -77,7 +78,7 @@ class FallbackController:
         # 2. Which level do the conditions call for? (checked most severe first)
         if blocked:
             target = 3
-        elif self.level >= 1 and self.in_level >= ESCALATE_STEPS and urgent:
+        elif USE_L2 and self.level >= 1 and self.in_level >= ESCALATE_STEPS and urgent:
             target = 2
         elif self.high_run >= ENTER_STEPS:
             target = 1
@@ -91,7 +92,10 @@ class FallbackController:
             calm = {1: self.low_run, 2: self.low_run, 3: self.unblocked_run}[self.level]
             # calm must also have lasted inside THIS level, so each level is held for a while
             if min(calm, self.in_level) >= EXIT_STEPS[self.level]:
-                self._set_level(self.level - 1)
+                new = self.level - 1
+                if new == 2 and not USE_L2: # skip the disabled officer level
+                    new = 1
+                self._set_level(new)
         self.in_level += 1
         self.level_steps[self.level] += 1
 
@@ -138,16 +142,21 @@ if __name__ == "__main__":
     ap.add_argument("--tau-enter", type=float, default=lr.TAU_ENTER)
     ap.add_argument("--tau-exit", type=float, default=lr.TAU_EXIT)
     ap.add_argument("--enter-steps", type=int, default=ENTER_STEPS)
-    ap.add_argument("--no-l2", action="store_true", help="disable escalation to the officer")
+    ap.add_argument("--no-l2", action="store_true", help="disable the officer level completely")
+    ap.add_argument("--l2-recovery-only", action="store_true",
+                    help="officer used only when recovering from L3, never for escalation")
     args = ap.parse_args()
+
+    ENTER_STEPS = args.enter_steps
+    if args.no_l2:
+        USE_L2 = False
+    if args.l2_recovery_only:
+        ESCALATE_STEPS = 10**9          # no L1 -> L2 escalation; L3 -> L2 -> L1 recovery kept
+    seed0 = args.seed0 if args.seed0 is not None else CFG["seeds"]["eval_start"]
 
     label, l0 = make_policy(args.policy)
     _, l1 = make_policy("urgent")
     _, officer = make_policy("nearest")
-    ENTER_STEPS = args.enter_steps
-    if args.no_l2:
-        ESCALATE_STEPS = 10**9  # never escalates
-    seed0 = args.seed0 if args.seed0 is not None else CFG["seeds"]["eval_start"]
 
     base = run_episodes(l0, args.scenario, args.episodes, seed0)
     ctrl = FallbackController(l0, l1, officer, args.tau_enter, args.tau_exit)
