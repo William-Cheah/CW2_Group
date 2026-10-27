@@ -10,7 +10,7 @@ pd.set_option("display.width", 250)
 
 ROOT = Path(__file__).resolve().parents[1]  #repo root
 sys.path.insert(0, str(ROOT/ "C_ml_engine"))
-from logger import read_jsonl
+from logger import read_jsonl   # type: ignore  # C's reader; path added at runtime above
 
 HOSPITALS = ["Pasir Mas", "Tanah Merah", "Machang", "Kuala Krai"]
 N_ROADS = 7
