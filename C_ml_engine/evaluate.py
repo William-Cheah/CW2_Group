@@ -58,7 +58,7 @@ def summarise(df, label, scenario):
     m = df.mean(numeric_only=True)
     return (f"{label:24s} {scenario:9s} return {m.ret:7.1f} (sd {df.ret.std():5.1f}) | on-time {m.on_time_rate:.3f} | "
             f"expired {m.expired:5.2f} | wasted units {m.units_wasted:4.2f} | breaches {m.temp_breaches:4.2f} | "
-            f"failed trips {m.failed_trips:4.2f}")
+            f"failed trips {m.failed_trips:4.2f} | lazy waits {m.get('waited_with_urgent', 0):5.1f}")
 
 
 if __name__ == "__main__":

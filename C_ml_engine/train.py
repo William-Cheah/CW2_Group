@@ -4,6 +4,9 @@ train.py - train the PPO Dispatch Policy with MaskablePPO (sb3-contrib).
   python train.py                       # uses config.yaml, seed 0
   python train.py --seed 1
   python train.py --lr 1e-3 --run mppo_lr1e-3      # ablation
+  python train.py --set batch_size=64 --run mppo_bs64              # change any PPO hyperparameter
+  python train.py --reward waiting_urgent_per_step=0 --run mppo_nowait   # change a reward term (training only)
+  python train.py --train-scenario mixed --run mppo_mixed          # train on moderate + severe floods
 Watch training:  tensorboard --logdir runs/tb
 """
 import argparse
@@ -11,6 +14,8 @@ import os
 import time
 
 import yaml
+
+import bloodchain_env
 from sb3_contrib import MaskablePPO
 from sb3_contrib.common.maskable.callbacks import MaskableEvalCallback
 from stable_baselines3.common.callbacks import CheckpointCallback
@@ -30,20 +35,38 @@ def main():
     p.add_argument("--lr", type=float, default=None)
     p.add_argument("--steps", type=int, default=None)
     p.add_argument("--run", default=None)
+    p.add_argument("--set", action="append", default=[], metavar="KEY=VALUE",
+                   help="override a PPO hyperparameter from config.yaml, e.g. --set batch_size=64")
+    p.add_argument("--reward", action="append", default=[], metavar="KEY=VALUE",
+                   help="override a reward term in bloodchain_env.R for TRAINING only")
+    p.add_argument("--train-scenario", default=None, choices=["moderate", "severe", "mixed"],
+                   help="mixed = half of the parallel envs moderate, half severe")
     a = p.parse_args()
     cfg = yaml.safe_load(open(os.path.join(HERE, "config.yaml")))
     hp = dict(cfg["ppo"])
     if a.lr:
         hp["learning_rate"] = a.lr
+    for kv in a.set:                       # e.g. "batch_size=64" -> hp["batch_size"] = 64
+        k, v = kv.split("=", 1)
+        assert k in hp, f"unknown PPO setting '{k}'. Choose from {list(hp)}"
+        hp[k] = yaml.safe_load(v)
+    for kv in a.reward:                    # e.g. "waiting_urgent_per_step=0"
+        k, v = kv.split("=", 1)
+        assert k in bloodchain_env.R, f"unknown reward term '{k}'. Choose from {list(bloodchain_env.R)}"
+        bloodchain_env.R[k] = float(v)
     run = f"{a.run or cfg['run_name']}_s{a.seed}"
     out = os.path.join(HERE, "runs", run)
     os.makedirs(out, exist_ok=True)
-    yaml.safe_dump({"run": run, "seed": a.seed, "ppo": hp, "env": cfg["env"]}, open(os.path.join(out, "run_config.yaml"), "w"))
+    sc = a.train_scenario or cfg["env"]["train_scenario"]
+    yaml.safe_dump({"run": run, "seed": a.seed, "ppo": hp, "env": cfg["env"], "train_scenario": sc,
+                    "reward": dict(bloodchain_env.R), "overrides": {"set": a.set, "reward": a.reward}},
+                   open(os.path.join(out, "run_config.yaml"), "w"))
 
-    sc = cfg["env"]["train_scenario"]
-    venv = DummyVecEnv([lambda: Monitor(BloodChainEnv(sc)) for _ in range(cfg["env"]["n_envs"])])
+    n_envs = cfg["env"]["n_envs"]
+    scen_list = (["moderate", "severe"] * n_envs)[:n_envs] if sc == "mixed" else [sc] * n_envs
+    venv = DummyVecEnv([lambda s_=s_: Monitor(BloodChainEnv(s_)) for s_ in scen_list])
     venv.seed(a.seed)
-    eval_env = Monitor(BloodChainEnv(sc))
+    eval_env = Monitor(BloodChainEnv(cfg["env"]["train_scenario"]))   # always validate on moderate
     eval_env.reset(seed=cfg["seeds"]["val_start"])
 
     model = MaskablePPO("MlpPolicy", venv, seed=a.seed, verbose=1,

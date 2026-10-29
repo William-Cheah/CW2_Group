@@ -48,6 +48,15 @@ tensorboard --logdir runs/tb                                            # open h
 python evaluate.py --policy runs/mppo_lr3e-4_s0/best_model.zip --scenario severe --log
 ```
 
+Ablation options for `train.py` (C):
+```
+--lr 1e-3                              # learning rate
+--set batch_size=64 --set n_epochs=5   # any PPO setting in config.yaml
+--reward waiting_urgent_per_step=0     # change a reward term (training only)
+--train-scenario mixed                 # train on moderate + severe floods
+```
+`evaluate.py` also prints **lazy waits**: steps where urgent blood was waiting, a dispatch was possible, but the agent chose to wait.
+
 ## 4. How A and B start NOW (no need to wait for C)
 - **A:** see `A_uncertainty/README.md`. Plug your code into the environment through the hooks in `CONTRACT.md`. Test with the `urgent` / `nearest` baselines until C's trained model is ready.
 - **B:** see `B_memory_xai/README.md`. Real contract-format logs are already in `logs/` (`sample_urgent_moderate.jsonl`, `sample_urgent_severe.jsonl`), so there is no need to fake them. Switch to the trained-model logs when C shares them (by 28 Oct).

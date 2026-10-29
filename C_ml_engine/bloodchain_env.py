@@ -264,7 +264,7 @@ class BloodChainEnv(gym.Env):
         self.requests: list[Request] = []
         self.belief.reset(N_ROADS)
         self.stats = dict(requests=0, on_time=0, late=0, expired=0, units_wasted=0,
-                          temp_breaches=0, unsafe_use=0, failed_trips=0)
+                          temp_breaches=0, unsafe_use=0, failed_trips=0, waited_with_urgent=0)
         self.events: list[str] = []
         self.van_seen: set[int] = set()
         self._wasted, self._breach = 0, False
@@ -383,6 +383,9 @@ class BloodChainEnv(gym.Env):
         action = int(action)
         self._wasted, self._breach, self.events = 0, False, []
         reward = 0.0
+        # count "lazy" waits: urgent blood is pending and a dispatch was possible, but the agent waited
+        if action == 0 and self.action_masks()[1:].any() and any(q.urgent for q in self.requests):
+            self.stats["waited_with_urgent"] += 1
         if action > 0:
             v, k = divmod(action - 1, len(HOSPITALS))
             if self.action_masks()[action]:
