@@ -1,0 +1,13 @@
+scenario,fault_rate,safety,unsafe_used,warm_caught,good_used,good_rejected,miss_rate,false_alarm_rate
+moderate,0.0,CrispSafety,7,18,1189,2,0.28,0.002
+moderate,0.0,FuzzySafety,0,25,1154,30,0.0,0.025
+moderate,0.25,CrispSafety,11,12,1061,2,0.478,0.002
+moderate,0.25,FuzzySafety,1,25,1036,25,0.038,0.024
+moderate,0.5,CrispSafety,13,13,831,0,0.5,0.0
+moderate,0.5,FuzzySafety,4,21,822,13,0.16,0.016
+severe,0.0,CrispSafety,11,28,588,2,0.282,0.003
+severe,0.0,FuzzySafety,0,40,572,22,0.0,0.037
+severe,0.25,CrispSafety,5,11,415,0,0.312,0.0
+severe,0.25,FuzzySafety,1,15,406,9,0.062,0.022
+severe,0.5,CrispSafety,7,5,219,2,0.583,0.009
+severe,0.5,FuzzySafety,2,9,213,9,0.182,0.041
