@@ -70,4 +70,14 @@ python evaluate.py --policy ../logs/local/best_model.zip --scenario severe --epi
 cd ..
 python B_memory_xai/memory_gate.py logs/local/eval_local_severe.jsonl
 python B_memory_xai/fallback_controller.py --policy logs/local/best_model.zip --episodes 100
-python B_memory_xai/plan_card.py --seed 10050
+python B_memory_xai/plan_card.py --seed 10050\
+
+## 4. Fallback under A's sensor noise (config 5a, severe, eval seeds 10000+, 100 days, τ fixed)
+| Fault rate | PPO | +FB | Paired diff | Failed trips PPO -> FB | L3 share |
+|---|---|---|---|---|---|
+| 0    | -41.3 | -47.4 | -6.1 ± 7.9   | 4.67 -> 3.21   | 39% |
+| 0.10 | -36.6 | -47.5 | -11.0 ± 8.3  | 7.06 -> 5.20   | 33% |
+| 0.25 | -69.5 | -80.6 | -11.1 ± 12.3 | 12.56 -> 10.60 | 28% |
+| 0.50 | -80.3 | -95.1 | -14.9 ± 11.8 | 15.28 -> 15.37 | 17% |
+Finding: hypothesis refuted. Common-mode failure: fallback triggers on the same corrupted beliefs as PPO.
+Noise 0 reproduces the final test exactly (sanity check). PPO-alone values consistent with A's robustness_ppo (50 days).
