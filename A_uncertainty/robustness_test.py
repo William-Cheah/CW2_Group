@@ -1,4 +1,4 @@
-"""Robustness test 
+"""Robustness test (Member A) -> Fig. 5 and the numbers for report Section 2.2.2.
 
 Grid:  belief estimator  {NaiveBelief (C's placeholder), BetaBelief (A)}
      x sensor fault rate {0, 0.10, 0.25, 0.50}   (A's SensorNoise wrapper)
@@ -145,7 +145,7 @@ def make_figure(raw, path, label):
             if i == 1:
                 ax.set_xlabel("Sensor fault rate (%)")
     axes[0, 0].legend(fontsize=8)
-    fig.suptitle(f"Fig. 5: Robustness to sensor faults - policy: {label} "
+    fig.suptitle(f"Robustness to sensor faults - policy: {label} "
                  f"(mean, 95% CI; synthetic environment)", fontsize=10)
     fig.tight_layout()
     fig.savefig(path, dpi=150)
