@@ -130,8 +130,9 @@ class FallbackController:
 
 
 if __name__ == "__main__":
-    # Evidence: the same policy WITH and WITHOUT the Fallback Controller, on unseen severe floods.
+    # Evidence: the same policy WITH and WITHOUT the Fallback Controller.
     import argparse
+    import sys
     from evaluate import make_policy, run_episodes, summarise, CFG
 
     ap = argparse.ArgumentParser()
@@ -145,6 +146,8 @@ if __name__ == "__main__":
     ap.add_argument("--no-l2", action="store_true", help="disable the officer level completely")
     ap.add_argument("--l2-recovery-only", action="store_true",
                     help="officer used only when recovering from L3, never for escalation")
+    ap.add_argument("--noise", type=float, default=0.0,
+                    help="A's sensor fault_rate (0 = clean sensors)")
     args = ap.parse_args()
 
     ENTER_STEPS = args.enter_steps
@@ -154,13 +157,21 @@ if __name__ == "__main__":
         ESCALATE_STEPS = 10**9          # no L1 -> L2 escalation; L3 -> L2 -> L1 recovery kept
     seed0 = args.seed0 if args.seed0 is not None else CFG["seeds"]["eval_start"]
 
+    env_setup = None
+    if args.noise > 0:
+        sys.path.insert(0, str(lr.ROOT / "A_uncertainty"))
+        from noise_wrapper import SensorNoise
+        # a NEW SensorNoise per day: it remembers blackouts / last temperature
+        env_setup = lambda e: setattr(e.unwrapped, "sensor_hook", SensorNoise(fault_rate=args.noise))
+    print(f"Sensor noise fault_rate = {args.noise}")
+
     label, l0 = make_policy(args.policy)
     _, l1 = make_policy("urgent")
     _, officer = make_policy("nearest")
 
-    base = run_episodes(l0, args.scenario, args.episodes, seed0)
+    base = run_episodes(l0, args.scenario, args.episodes, seed0, env_setup=env_setup)
     ctrl = FallbackController(l0, l1, officer, args.tau_enter, args.tau_exit)
-    wrapped = run_episodes(ctrl, args.scenario, args.episodes, seed0)
+    wrapped = run_episodes(ctrl, args.scenario, args.episodes, seed0, env_setup=env_setup)
 
     print(summarise(base, label, args.scenario))
     print(summarise(wrapped, label + "+fallback", args.scenario))
